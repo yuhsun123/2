@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+
+<title>Simple Layout</title>
+<style type="text/css">
+
+
+
+/* ==================== 版面配置 ==================== */
+
+#container	{
+	width: 100%;
+	height: 100%;
+	overflow:hidden;
+	}
+
+#content	{
+	width: 100%;
+	height: 100%;
+	
+	}
+
+.body{
+	margin: 0px;
+}
+/* ==================== 頁首 ==================== */
+
+
+
+#header_inner	{}
+
+#header h1	{}
+
+#header p	}
+
+/* ==================== 內容 ==================== */
+
+.post	{}
+
+
+
+.posttext	{}
+
+.posttext p	{}
+.SceneMarker
+{
+	position: absolute;
+	width: 5.4em;
+	height: 5.4em;
+	top: 30%;
+	left: 50%;
+}
+.SceneMarker-img
+{
+	position: absolute;
+ 	
+/*	width: 5.4em;
+	height: 5.4em;
+	top: 30%;
+	left: 50%;*/
+	background-image: url('marker01.png');
+	
+}
+.markers
+{
+	position: absolute;
+	width: 5.4em;
+	height: 5.4em;
+	top: 50%;
+	left: 50%;*
+}
+.marker-img 
+{
+	position: absolute;
+ 	
+	/*width: 5.4em;
+	height: 5.4em;
+	top: 50%;
+	left: 50%;*/
+	background-image: url('marker01.png');
+	
+}
+.label
+{
+	font-family: 'Century Gothic', 'URW Gothic L', 'Trebuchet MS', sans-serif;
+	font-weight: bold;
+ 	font-size: 0.9em;
+  	color: #f5622d;
+  /*padding: 2px 5px;
+  border-radius: 3px;
+  background-color: rgba(0,0,0,0.5);*/
+  	text-shadow: 1px 1px 1px #000000;
+  	filter: dropshadow(color=#000000, offx=1, offy=1);
+}
+/* ==================== 頁尾 ==================== */
+
+#footer	{border-top:5px solid green;
+
+}
+
+#footer p	{}
+
+
+
+
+</style>
+</head>
+    
+<body>
+
+
+<div id="container">
+
+<div id="head">
+<div id="header">
+<div id="header_inner">
+
+	
+
+</div>
+</div>
+</div>
+
+
+
+
+<div id="content">
+
+<div class="post">
+	
+	<div class="posttext">
+	<script type="text/javascript" charset="utf-8" src="js/three.js"></script>
+	<script type="text/javascript" charset="utf-8" src="js/hammer.js"></script>
+	<script type="text/javascript" charset="utf-8" src="js/jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" charset="utf-8" src = "js/infodata.json"></script>
+    <script type="text/javascript" charset="utf-8" src="js/jquery-1.10.1.min.js"></script>
+		<script>
+		//hammerjs
+		//var reqAnimationFrame = (function () {
+       // return window[Hammer.prefixed(window, 'requestAnimationFrame')] || function (callback) {
+        //    window.setTimeout(callback, 1000 / 60);
+       // };
+    	//})();
+           // var information = JSON.parse(infodata);
+			$.ajax({
+				url: "infodata.json",
+				type: "GET",
+				dataType: "json",
+				success: function(information){
+				var fileName;
+				for(var i=0; i < information.images.length; i++){
+				console.log( information.images[i], get("key") )
+    			if( information.images[i].key == get("key")){  console.log( information.images[i].fileName),fileName =  information.images[i].fileName; break;}
+                
+  			}
+  
+   			$("canvas").width("100%");
+        	$("canvas").height("100%");
+			window.onresize = function (){ $('canvas').css( {'width' : '100%', height : '100%'});};
+
+   //網址後面傳遞參數
+   			//場景參數
+   			var key =  get("key");
+            //視角參數
+            var plon = get("plon");
+            var plat = get("plat");
+            var pfov = get("pfov");
+            
+   			function get(name){
+    	  		if(name=(new RegExp('[#&]'+encodeURIComponent(name)+'=([^&]*)')).exec(window.location.href))               
+                    return decodeURIComponent(name[1]);                  
+    	  		
+
+
+   			}
+                if(key == null)
+                {
+                    window.location.replace("#key=scene1&plon=271&plat=0")
+                }
+                if(plon == null)
+                {
+                    plon = 0;
+                }
+                if(plat == null)
+                {
+                    plat = 0;
+                }
+                else if(plat < -84 || plat > 84)
+                {
+                    plat = 0
+                }
+                if (pfov == null)
+                {
+                    pfov = 95;
+                }
+                else if (pfov < 40 || pfov > 100 )
+                {
+                    pfov = 95;
+                }
+            plon = Number(plon);
+            plat = Number(plat);
+            pfov = Number(pfov);
+
+		    var log = document.querySelector("#log");
+		    var el = document.querySelector("#container");
+
+		    var START_X= plon;
+		    var START_Y= plat;
+		    var initScale =0;
+		    var ticking = false;
+		    var transform;
+		    var timer;
+		    var min_fov = 40;
+		    var max_fov = 100;
+		    var min_lat = -84;
+		    var max_lat = 84;
+		    var mc = new Hammer.Manager(el);
+		    mc.add(new Hammer.Pan({ threshold: 0, pointers: 0 }));
+    		mc.add(new Hammer.Pinch({ threshold: 0 })).recognizeWith([mc.get('pan')]);
+		    mc.on("panstart panmove", onPan);
+    		mc.on("pinchstart pinchmove", onPinch);
+		    mc.on("hammer.input", function(ev) 
+		    {
+		        if(ev.isFinal) 
+		        {
+		        START_X=lon;
+		        START_Y=lat;
+		        }
+		    });
+		    //threejs
+			var camera, scene, renderer;
+			var mouseclick;
+			var t;
+
+			//參數
+			
+			var isUserInteracting = false,
+			onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+			//起始視角經緯
+			lon = plon, onMouseDownLon = 0,
+			lat = plat, onMouseDownLat = 0,
+			phi = 0, theta = 0;
+            var tempfov;
+            
+			init();
+			animate();
+            testmark();
+			//切換場景
+			
+			function CreateMarkers()
+			{
+				//document.getElementById('marker0')
+			}
+			function init() {
+
+				var container, mesh;
+				container = document.getElementById( 'container' );
+                //fov 參數
+                var nfov = pfov;
+				camera = new THREE.PerspectiveCamera( nfov, window.innerWidth / window.innerHeight, 1, 1100 );
+				camera.target = new THREE.Vector3( 0, 0, 0 );
+				scene = new THREE.Scene();
+				var geometry = new THREE.SphereGeometry( 500, 60, 40 );
+				geometry.scale( - 1, 1, 1 );
+				//圖片來源
+				var material = new THREE.MeshBasicMaterial( {
+					map: new THREE.TextureLoader().load(fileName)
+				} );
+
+				mesh = new THREE.Mesh( geometry, material );
+				scene.add( mesh );
+				renderer = new THREE.WebGLRenderer({
+                    antialias:true,
+                    precision:"highp",
+                    preserveDrawingBuffer:true
+                });
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+				//滾輪
+				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+				document.addEventListener( 'MozMousePixelScroll', onDocumentMouseWheel, false);
+				//===拖動事件====
+				document.addEventListener( 'dragover', function ( event ) {
+					event.preventDefault();
+					event.dataTransfer.dropEffect = 'copy';
+				}, false );
+				document.addEventListener( 'dragenter', function ( event ) {
+					document.body.style.opacity = 0.5;
+				}, false );
+				document.addEventListener( 'dragleave', function ( event ) {
+					document.body.style.opacity = 1;
+				}, false );
+				//===拖動事件結束====
+
+				document.addEventListener( 'drop', function ( event ) {
+					event.preventDefault();
+					var reader = new FileReader();
+					reader.addEventListener( 'load', function ( event ) {
+						material.map.image.src = event.target.result;
+						material.map.needsUpdate = true;
+					}, false );
+					reader.readAsDataURL( event.dataTransfer.files[ 0 ] );
+					document.body.style.opacity = 1;
+				}, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				
+			}
+            //
+            var mark;
+            function testmark()
+            {
+                mark = new THREE.Mesh
+                (
+                    new THREE.SphereGeometry(10,10),
+                    new THREE.MeshBasicMaterial({color : 0xff0000})
+                )
+                scene.add(mark);
+                
+                mark.position.set(358,85,-350);
+            }
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+			function onDocumentMouseDown( event ) {
+				event.preventDefault();
+				isUserInteracting = true;
+				onPointerDownPointerX = event.clientX;
+				onPointerDownPointerY = event.clientY;
+				onPointerDownLon = lon;
+				onPointerDownLat = lat;
+				
+			}
+			function onDocumentMouseMove( event ) {
+				if ( isUserInteracting === true ) {
+					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+					lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+
+				}
+			}
+			function onDocumentMouseUp( event ) 
+			{
+				isUserInteracting = false;
+			}
+
+			function onDocumentMouseWheel( event ) 
+			{
+				// WebKit
+				if ( event.wheelDeltaY ) {
+					camera.fov -= event.wheelDeltaY * 0.05;
+				// Opera / Explorer 9
+				} else if ( event.wheelDelta ) {
+					camera.fov -= event.wheelDelta * 0.05;
+				// Firefox
+				} else if ( event.detail ) {
+					camera.fov += event.detail * 1.0;
+				}
+				//
+				if (camera.fov < min_fov) 
+				{       
+                    if(key == "scene1") //401C
+                    {
+                        if(lon < 6 || lon > 345 )//進402-1
+                        {
+                            if (lat > -32 && lat < 20) 
+                                {
+                                    window.location.replace("#key=scene8&plon=92")
+                                    window.location.reload();
+                                }
+                        }
+                        if (lon >82 && lon <97 && lat < 11 && lat > -6) //往402-2走廊
+                            {
+                                window.location.replace("#key=scene2&plon=271&plat=0")
+                                window.location.reload();
+                            }
+                    }
+                    if(key == "scene2") //402C
+                    {
+                        if(lon > 75 && lon < 95 && lat < 11 && lat > -11)//往402-1走廊
+                        {
+                            window.location.replace("#key=scene1&plon=271&plat=0")
+                            window.location.reload();
+                        }
+                        if(lon > 155 && lon < 180 && lat < 13 && lat > -13)//to 402-2
+                        {
+                            window.location.replace("#key=scene9&plon=75&plat=-2")
+                            window.location.reload();
+                        }
+                        if(lon > 263 && lon < 276 && lat < 11 && lat > -11)//往407走廊
+                        {
+                            window.location.replace("#key=scene3&plon=87&plat=0")
+                            window.location.reload();
+                        }
+                    }
+                    if(key == "scene3") //407C
+                    {
+                         if(lon > 155 && lon < 190 && lat < 13 && lat > -13)//to 4071
+                        {
+                            window.location.replace("#key=scene6&plon=3&plat=-2")
+                            window.location.reload();
+                        }
+                          if(lon > 250 && lon < 280 && lat < 13 && lat > -13)//to 402C
+                        {
+                            window.location.replace("#key=scene2&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                         if(lon < 6 || lon > 345 )//to 4061
+                        {
+                            if (lat > -32 && lat < 20) 
+                                {
+                                    window.location.replace("#key=scene4&plon=175&plat=-3")
+                                    window.location.reload();
+                                }
+                        }
+                    }
+                    if(key == "scene4") //4061
+                    {
+                         if(lon > 18 && lon < 36 && lat < 13 && lat > -13)//to 407C
+                        {
+                            window.location.replace("#key=scene3&plon=175&plat=7&pfov=100")
+                            window.location.reload();
+                        }
+                        if(lon > 255 && lon < 280 && lat < 13 && lat > -13)//to 4062
+                        {
+                            window.location.replace("#key=scene5&plon=84&plat=1&pfov=100")
+                            window.location.reload();
+                        }
+                        if(lon > 75 && lon < 95 && lat < 11 && lat > -11)//往402-2
+                        {
+                            window.location.replace("#key=scene9")
+                            window.location.reload();
+                        }
+                    }         
+                    if(key == "scene5") //4062
+                    {
+                         if(lon > 135 && lon < 150 && lat < 13 && lat > -13)//to 407C
+                        {
+                            window.location.replace("#key=scene3&plon=175&plat=7")
+                            window.location.reload();
+                        }
+                         if(lon > 255 && lon < 280 && lat < 13 && lat > -13)//to 4061
+                        {
+                            window.location.replace("#key=scene4&plon=85&plat=7")
+                            window.location.reload();
+                        }
+                    }         
+                    if(key == "scene6")//4071
+                    {
+                       if(lon > 130 && lon < 170 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene3")
+                            window.location.reload();
+                        }
+                        if(lon > 250 && lon < 290 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene7&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                    }
+                    if(key == "scene7")//4072
+                    {
+                        if(lon > 43 && lon < 60 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene3")
+                            window.location.reload();
+                        }
+                        if(lon > 250 && lon < 290 && lat < 13 && lat > -13)// to 4071
+                        {
+                            window.location.replace("#key=scene6&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                       
+                    }
+                    if(key == "scene8")// 402_1
+                    {
+                        if(lon < 285 && lon >265 && lat < 13 && lat > -19) //to 401C                
+                        {
+                            window.location.replace("#key=scene1&plon=180")
+                            window.location.reload();
+                        }
+                        if(lon < 190 && lon >170 && lat < 13 && lat > -19) //to 402_2                
+                        {
+                            window.location.replace("#key=scene9&plon=180")
+                            window.location.reload();
+                        }
+                    }
+                    /*if(key == "scene9") //402_2
+                    {
+                        if(lon < 12 || lon > 352) //to 402-1               
+                        {
+                            if(lat > -13 && lat < 13)
+                            {
+                                window.location.replace("#key=scene8")
+                                window.location.reload();
+                            }
+                        }
+                        if(lon > 155 && lon < 190 && lat < 13 && lat > -13)//to 4061
+                        {
+                            window.location.replace("#key=scene4&plon=275")
+                            window.location.reload();
+                        }
+                        if(lon > 216 && lon < 232 && lat < 13 && lat > -13)//to 402C
+                        {
+                            window.location.replace("#key=scene2&plon=3")
+                            window.location.reload();
+                        }
+                      
+                    }*/
+                      
+					camera.fov = min_fov;
+				}
+        		if (camera.fov > max_fov) 
+        		{
+
+					camera.fov = max_fov;
+				}
+
+				camera.updateProjectionMatrix();
+				event.preventDefault();
+			}
+            //渲染循环
+			function animate() {
+				requestAnimationFrame( animate );
+				update();
+
+			}
+			function update() {
+
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.Math.degToRad( 90 - lat );
+				theta = THREE.Math.degToRad( lon );
+				camera.target.x = 500 * Math.sin( phi ) * Math.cos( theta );
+				camera.target.y = 500 * Math.cos( phi );
+				camera.target.z = 500 * Math.sin( phi ) * Math.sin( theta );
+				camera.lookAt( camera.target );
+				renderer.render( scene, camera );
+			}
+		
+
+//滑鼠拖動放開顯示座標
+			document.getElementById('container').onmouseup = function(){mouseUP()};
+
+			function mouseUP()
+			{
+				//alert('lon: '+lon+'lat: '+lat+'fov '+camera.fov);
+			}
+            //手指移動
+    		function onPan(ev) {
+
+        		lon=START_X +ev.deltaX/-8;
+        		lat=START_Y +ev.deltaY/8;
+        		if (lat< min_lat) 
+					{
+						lat = min_lat;
+					}
+       				else if (lat > max_lat) 
+        			{
+						lat = max_lat;
+					}
+                   lon = (lon+360)%360;
+
+                   
+        		/*if(onDocumentMouseUp == true)
+        		{
+        			alert('lon:'+lon+'lat:'+lat+'fov'+camera.fov);
+
+*/
+        		console.log('lon:'+lon+ ' lat:'+lat + ' fov:' + camera.fov);
+
+    		}
+
+    		var initScale;
+            //手指放大縮小事件
+    		function onPinch(ev) {
+        		if(ev.type == 'pinchstart') {
+            		initScale = camera.fov || 1;
+
+        		}
+        
+       			camera.fov = initScale / ev.scale;
+
+                if (camera.fov < min_fov) 
+                {       
+                    if(key == "scene1") //401C
+                    {
+                        if(lon < 6 || lon > 345 )//進402-1
+                        {
+                            if (lat > -32 && lat < 20) 
+                                {
+                                    window.location.replace("#key=scene8&plon=92")
+                                    window.location.reload();
+                                }
+                        }
+                        if (lon >82 && lon <97 && lat < 11 && lat > -6) //往402-2走廊
+                            {
+                                window.location.replace("#key=scene2&plon=271&plat=0")
+                                window.location.reload();
+                            }
+                    }
+                    if(key == "scene2") //402C
+                    {
+                        if(lon > 75 && lon < 95 && lat < 11 && lat > -11)//往402-1走廊
+                        {
+                            window.location.replace("#key=scene1&plon=271&plat=0")
+                            window.location.reload();
+                        }
+                        if(lon > 155 && lon < 180 && lat < 13 && lat > -13)//to 402-2
+                        {
+                            window.location.replace("#key=scene9&plon=75&plat=-2")
+                            window.location.reload();
+                        }
+                        if(lon > 263 && lon < 276 && lat < 11 && lat > -11)//往407走廊
+                        {
+                            window.location.replace("#key=scene3&plon=87&plat=0")
+                            window.location.reload();
+                        }
+                    }
+                    if(key == "scene3") //407C
+                    {
+                         if(lon > 155 && lon < 190 && lat < 13 && lat > -13)//to 4071
+                        {
+                            window.location.replace("#key=scene6&plon=3&plat=-2")
+                            window.location.reload();
+                        }
+                          if(lon > 250 && lon < 280 && lat < 13 && lat > -13)//to 402C
+                        {
+                            window.location.replace("#key=scene2&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                         if(lon < 6 || lon > 345 )//to 4061
+                        {
+                            if (lat > -32 && lat < 20) 
+                                {
+                                    window.location.replace("#key=scene4&plon=175&plat=-3")
+                                    window.location.reload();
+                                }
+                        }
+                    }
+                    if(key == "scene4") //4061
+                    {
+                         if(lon > 18 && lon < 36 && lat < 13 && lat > -13)//to 407C
+                        {
+                            window.location.replace("#key=scene3&plon=175&plat=7")
+                            window.location.reload();
+                        }
+                        if(lon > 255 && lon < 280 && lat < 13 && lat > -13)//to 4062
+                        {
+                            window.location.replace("#key=scene5&plon=84&plat=1&pfov=100")
+                            window.location.reload();
+                        }
+                        if(lon > 75 && lon < 95 && lat < 11 && lat > -11)//往402-2
+                        {
+                            window.location.replace("#key=scene9")
+                            window.location.reload();
+                        }
+                    }         
+                    if(key == "scene5") //4062
+                    {
+                         if(lon > 135 && lon < 150 && lat < 13 && lat > -13)//to 407C
+                        {
+                            window.location.replace("#key=scene3&plon=175&plat=7")
+                            window.location.reload();
+                        }
+                         if(lon > 255 && lon < 280 && lat < 13 && lat > -13)//to 4061
+                        {
+                            window.location.replace("#key=scene4&plon=85&plat=7")
+                            window.location.reload();
+                        }
+                    }         
+                    if(key == "scene6")//4071
+                    {
+                       if(lon > 130 && lon < 170 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene3")
+                            window.location.reload();
+                        }
+                        if(lon > 250 && lon < 290 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene7&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                    }
+                    if(key == "scene7")//4072
+                    {
+                        if(lon > 43 && lon < 60 && lat < 13 && lat > -13)// to 407C
+                        {
+                            window.location.replace("#key=scene3")
+                            window.location.reload();
+                        }
+                        if(lon > 250 && lon < 290 && lat < 13 && lat > -13)// to 4071
+                        {
+                            window.location.replace("#key=scene6&plon=89&plat=-3")
+                            window.location.reload();
+                        }
+                       
+                    }
+                    if(key == "scene8")// 402_1
+                    {
+                        if(lon < 285 && lon >265 && lat < 13 && lat > -19) //to 401C                
+                        {
+                            window.location.replace("#key=scene1&plon=180")
+                            window.location.reload();
+                        }
+                        if(lon < 190 && lon >170 && lat < 13 && lat > -19) //to 402_2                
+                        {
+                            window.location.replace("#key=scene9&plon=180")
+                            window.location.reload();
+                        }
+                    }
+                    if(key == "scene9") //402_2
+                    {
+                        if(lon < 12 || lon > 352) //to 402-1               
+                        {
+                            if(lat > -13 && lat < 13)
+                            {
+                                window.location.replace("#key=scene8")
+                                window.location.reload();
+                            }
+                        }
+                        if(lon > 155 && lon < 190 && lat < 13 && lat > -13)//to 4061
+                        {
+                            window.location.replace("#key=scene4&plon=275")
+                            window.location.reload();
+                        }
+                        if(lon > 216 && lon < 232 && lat < 13 && lat > -13)//to 402C
+                        {
+                            window.location.replace("#key=scene2&plon=3")
+                            window.location.reload();
+                        }
+                      
+                    }
+                      camera.fov = min_fov;
+                }
+        		else if (camera.fov > max_fov) 
+        		{
+					camera.fov = max_fov;
+				}	
+
+        		camera.updateProjectionMatrix();
+
+    		}
+    		function click()
+    		{
+    			alert('lon:'+lon+'lat:'+lat);
+
+    		}
+    		}
+    		
+		});
+          
+		function ChangeState()
+			{
+                console.log(key);                
+			}
+
+			//document.getElementById('pic01').onmouseup = function(){markeraction()};
+		
+			function markeraction()
+			{
+				window.open("infopage.html",config="toolbar=no,scrollbar=no,resize=no,location=no, menubar=no,status=no");
+			}
+		</script>
+		
+	</div>
+</div>
+	<div class = "SceneMarker" >
+		<div class = "SceneMarker-img"></div>
+	<!--	<span class = "label" id = "Scene01" onmouseup ="ChangeScene(1)">場景切換一</span>
+        <span class = "label" id = "Scene02" onmouseup ="ChangeScene(2)">場景切換二</span>
+        <span class = "label" id = "Scene03" onmouseup ="ChangeScene(3)">場景切換三</span>
+        <span class = "label" id = "Scene04" onmouseup ="ChangeScene(4)">場景切換四</span>
+        <span class = "label" id = "Scene05" onmouseup ="ChangeScene(5)">場景切換五</span>
+         --> 
+	</div> 
+	<!--<div class = "markers"  >
+		<div class = "marker-img" id = "marker01"></div>
+		<span class ="label" id = "pic01" onmouseup = "markeraction()" >照片一號</span>
+	</div>-->
+ 
+</div>
+	
+
+</div>
+</div>
+</div>
+
+</body>
+</html>
